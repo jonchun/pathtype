@@ -3,16 +3,18 @@ package pathtype_test
 import (
 	"fmt"
 
-	"github.com/jonchun/pathtype"
+	pt "github.com/jonchun/pathtype"
 )
 
 func ExampleSplitList() {
-	fmt.Println("On Unix:", pathtype.SplitList("/a/b/c:/usr/bin"))
+	fmt.Println("On Unix:", pt.SplitList("/a/b/c:/usr/bin"))
 	// Output:
 	// On Unix: [/a/b/c /usr/bin]
 }
 
 func ExamplePath_Rel() {
+	type path = pt.Path
+
 	paths := []path{
 		path("/a/b/c"),
 		path("/b/c"),
@@ -34,6 +36,8 @@ func ExamplePath_Rel() {
 }
 
 func ExamplePath_Split() {
+	type path = pt.Path
+
 	paths := []path{
 		path("/home/arnie/amelia.jpg"),
 		path("/mnt/photos/"),
@@ -62,6 +66,7 @@ func ExamplePath_Split() {
 }
 
 func ExamplePath_Join() {
+	type path = pt.Path
 	fmt.Println("On Unix:")
 	fmt.Println(path("a").Join(path("b"), path("c")))
 	fmt.Println(path("a").Join(path("b/c")))
@@ -80,6 +85,7 @@ func ExamplePath_Join() {
 }
 
 func ExamplePath_Match() {
+	type path = pt.Path
 	fmt.Println("On Unix:")
 	fmt.Println(path("/home/catch/foo").Match("/home/catch/*"))
 	fmt.Println(path("/home/catch/foo/bar").Match("/home/catch/*"))
@@ -95,6 +101,7 @@ func ExamplePath_Match() {
 }
 
 func ExamplePath_Base() {
+	type path = pt.Path
 	fmt.Println("On Unix:")
 	fmt.Println(path("/foo/bar/baz.js").Base())
 	fmt.Println(path("/foo/bar/baz").Base())
@@ -119,6 +126,7 @@ func ExamplePath_Base() {
 	// .
 }
 func ExamplePath_Dir() {
+	type path = pt.Path
 	fmt.Println("On Unix:")
 	fmt.Println(path("/foo/bar/baz.js").Dir())
 	fmt.Println(path("/foo/bar/baz").Dir())
@@ -146,6 +154,7 @@ func ExamplePath_Dir() {
 }
 
 func ExamplePath_IsAbs() {
+	type path = pt.Path
 	fmt.Println("On Unix:")
 	fmt.Println(path("/home/gopher").IsAbs())
 	fmt.Println(path(".bashrc").IsAbs())

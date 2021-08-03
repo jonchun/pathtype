@@ -5,6 +5,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	pt "github.com/jonchun/pathtype"
 )
 
 func prepareTestDirTree(tree string) (string, error) {
@@ -23,6 +25,7 @@ func prepareTestDirTree(tree string) (string, error) {
 }
 
 func ExampleWalk() {
+	type path = pt.Path
 	tmpDir, err := prepareTestDirTree("dir/to/walk/skip")
 	if err != nil {
 		fmt.Printf("unable to create test dir tree: %v\n", err)
