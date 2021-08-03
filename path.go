@@ -3,7 +3,9 @@ package pathtype
 
 import (
 	"io/fs"
+	"os"
 	"path/filepath"
+	"time"
 )
 
 type Path string
@@ -24,6 +26,49 @@ func (path Path) Abs() (Path, error) {
 // If the path consists entirely of separators, Base returns a single separator.
 func (path Path) Base() Path {
 	return Path(filepath.Base(string(path)))
+}
+
+// Chdir changes the current working directory to the directory at path.
+// If there is an error, it will be of type *PathError.
+func (path Path) Chdir() error { return os.Chdir(string(path)) }
+
+// Chmod changes the mode of the file at path to mode.
+// If the file is a symbolic link, it changes the mode of the link's target.
+// If there is an error, it will be of type *PathError.
+//
+// A different subset of the mode bits are used, depending on the
+// operating system.
+//
+// On Unix, the mode's permission bits, ModeSetuid, ModeSetgid, and
+// ModeSticky are used.
+//
+// On Windows, only the 0200 bit (owner writable) of mode is used; it
+// controls whether the file's read-only attribute is set or cleared.
+// The other bits are currently unused. For compatibility with Go 1.12
+// and earlier, use a non-zero mode. Use mode 0400 for a read-only
+// file and 0600 for a readable+writable file.
+//
+// On Plan 9, the mode's permission bits, ModeAppend, ModeExclusive,
+// and ModeTemporary are used.
+func (path Path) Chmod(mode os.FileMode) error { return os.Chmod(string(path), mode) }
+
+// Chown changes the numeric uid and gid of the file at path.
+// If the file is a symbolic link, it changes the uid and gid of the link's target.
+// A uid or gid of -1 means to not change that value.
+// If there is an error, it will be of type *PathError.
+//
+// On Windows or Plan 9, Chown always returns the syscall.EWINDOWS or
+// EPLAN9 error, wrapped in *PathError.
+func (path Path) Chown(uid, gid int) error { return os.Chown(string(path), uid, gid) }
+
+// Chtimes changes the access and modification times of the file at path,
+// similar to the Unix utime() or utimes() functions.
+//
+// The underlying filesystem may truncate or round the values to a
+// less precise time unit.
+// If there is an error, it will be of type *PathError.
+func (path Path) Chtimes(atime time.Time, mtime time.Time) error {
+	return os.Chtimes(string(path), atime, mtime)
 }
 
 // Clean returns the shortest path name equivalent to path
@@ -63,6 +108,18 @@ func (path Path) Dir() Path {
 	return Path(filepath.Dir(string(path)))
 }
 
+// DirFS returns a file system (an fs.FS) for the tree of files rooted at the directory at path.
+//
+// Note that DirFS("/prefix") only guarantees that the Open calls it makes to the
+// operating system will begin with "/prefix": DirFS("/prefix").Open("file") is the
+// same as os.Open("/prefix/file"). So if /prefix/file is a symbolic link pointing outside
+// the /prefix tree, then using DirFS does not stop the access any more than using
+// os.Open does. DirFS is therefore not a general substitute for a chroot-style security
+// mechanism when the directory tree contains arbitrary content.
+func (path Path) DirFS() fs.FS {
+	return os.DirFS(string(path))
+}
+
 // EvalSymlinks returns path's name after the evaluation of any symbolic
 // links.
 // If path is relative the result will be relative to the current directory,
@@ -88,7 +145,7 @@ func (path Path) FromSlash() Path {
 	return Path(filepath.FromSlash(string(path)))
 }
 
-// Glob returns the names of all files matching pattern or nil
+// Glob returns the names of all files matching path.Join(pattern) or nil
 // if there is no matching file. The syntax of patterns is the same
 // as in Match. The pattern may describe hierarchical names such as
 // /usr/*/bin/ed (assuming the Separator is '/').
@@ -129,6 +186,22 @@ func (path Path) Join(elem ...Path) Path {
 	return Path(filepath.Join(e1...))
 }
 
+// Lchown changes the numeric uid and gid of the file at path.
+// If the file is a symbolic link, it changes the uid and gid of the link itself.
+// If there is an error, it will be of type *PathError.
+//
+// On Windows, it always returns the syscall.EWINDOWS error, wrapped
+// in *PathError.
+func (path Path) Lchown(uid, gid int) error {
+	return os.Lchown(string(path), uid, gid)
+}
+
+// Link creates newname as a hard link to the path.
+// If there is an error, it will be of type *os.LinkError.
+func (path Path) Link(newname string) error {
+	return os.Link(string(path), newname)
+}
+
 // Match reports whether the path matches the shell file name pattern.
 // The pattern syntax is:
 //
@@ -156,6 +229,66 @@ func (path Path) Join(elem ...Path) Path {
 //
 func (path Path) Match(pattern string) (bool, error) {
 	return filepath.Match(pattern, string(path))
+}
+
+// Mkdir creates a new directory at path with the specified permission
+// bits (before umask).
+// If there is an error, it will be of type *os.PathError.
+func (path Path) Mkdir(perm os.FileMode) error {
+	return os.Mkdir(string(path), perm)
+}
+
+// MkdirAll creates a directory at path,
+// along with any necessary parents, and returns nil,
+// or else returns an error.
+// The permission bits perm (before umask) are used for all
+// directories that MkdirAll creates.
+// If path is already a directory, MkdirAll does nothing
+// and returns nil.
+func (path Path) MkdirAll(perm os.FileMode) error {
+	return os.MkdirAll(string(path), perm)
+}
+
+// MkdirTemp creates a new temporary directory in path
+// and returns the pathname of the new directory.
+// The new directory's name is generated by adding a random string to the end of pattern.
+// If pattern includes a "*", the random string replaces the last "*" instead.
+// If path is empty, MkdirTemp uses the default directory for temporary files, as returned by TempDir.
+// Multiple programs or goroutines calling MkdirTemp simultaneously will not choose the same directory.
+// It is the caller's responsibility to remove the directory when it is no longer needed.
+func (path Path) MkdirTemp(pattern string) (Path, error) {
+	res, err := os.MkdirTemp(string(path), pattern)
+	return Path(res), err
+}
+
+// Readlink returns the destination of the named symbolic link.
+// If there is an error, it will be of type *os.PathError.
+func (path Path) Readlink() (Path, error) {
+	res, err := os.Readlink(string(path))
+	return Path(res), err
+}
+
+// Remove removes the path.
+// If there is an error, it will be of type *os.PathError.
+func (path Path) Remove() error {
+	return os.Remove(string(path))
+}
+
+// RemoveAll removes path and any children it contains.
+// It removes everything it can but returns the first error
+// it encounters. If the path does not exist, RemoveAll
+// returns nil (no error).
+// If there is an error, it will be of type *os.PathError.
+func (path Path) RemoveAll() error {
+	return os.RemoveAll(string(path))
+}
+
+// Rename renames (moves) path to newpath.
+// If newpath already exists and is not a directory, Rename replaces it.
+// OS-specific restrictions may apply when path and newpath are in different directories.
+// If there is an error, it will be of type *os.LinkError.
+func (path Path) Rename(newpath Path) error {
+	return os.Rename(string(path), string(newpath))
 }
 
 // Rel returns a relative path that is lexically equivalent to targpath when
@@ -194,6 +327,12 @@ func SplitList(path string) []Path {
 	return p1
 }
 
+// Symlink creates newname as a symbolic link to the path.
+// If there is an error, it will be of type *os.LinkError..
+func (path Path) Symlink(newname string) error {
+	return os.Symlink(string(path), newname)
+}
+
 // ToSlash returns the result of replacing each separator character
 // in path with a slash ('/') character. Multiple separators are
 // replaced by multiple slashes.
@@ -207,6 +346,13 @@ func (path Path) ToSlash() Path {
 // On other platforms it returns "".
 func (path Path) VolumeName() Path {
 	return Path(filepath.VolumeName(string(path)))
+}
+
+// Truncate changes the size of the path.
+// If the file is a symbolic link, it changes the size of the link's target.
+// If there is an error, it will be of type *os.PathError.
+func (path Path) Truncate(size int64) error {
+	return os.Truncate(string(path), size)
 }
 
 // Walk walks the file tree rooted at path, calling fn for each file or
@@ -240,4 +386,11 @@ func (path Path) Walk(fn filepath.WalkFunc) error {
 // WalkDir does not follow symbolic links.
 func (path Path) WalkDir(fn fs.WalkDirFunc) error {
 	return filepath.WalkDir(string(path), fn)
+}
+
+// WriteFile writes data to the named file, creating it if necessary.
+// If the file does not exist, WriteFile creates it with permissions perm (before umask);
+// otherwise WriteFile truncates it before writing, without changing permissions.
+func (path Path) WriteFile(data []byte, perm os.FileMode) error {
+	return os.WriteFile(string(path), data, perm)
 }
