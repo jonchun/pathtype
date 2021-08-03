@@ -36,16 +36,16 @@ func ExampleWalk() {
 	subDirToSkip := "skip"
 
 	fmt.Println("On Unix:")
-	err = path(".").Walk(func(path string, info fs.FileInfo, err error) error {
+	err = path(".").Walk(func(p path, info fs.FileInfo, err error) error {
 		if err != nil {
-			fmt.Printf("prevent panic by handling failure accessing a path %q: %v\n", path, err)
+			fmt.Printf("prevent panic by handling failure accessing a path %q: %v\n", p, err)
 			return err
 		}
 		if info.IsDir() && info.Name() == subDirToSkip {
 			fmt.Printf("skipping a dir without errors: %+v \n", info.Name())
 			return filepath.SkipDir
 		}
-		fmt.Printf("visited file or dir: %q\n", path)
+		fmt.Printf("visited file or dir: %q\n", p)
 		return nil
 	})
 	if err != nil {

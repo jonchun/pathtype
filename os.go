@@ -32,14 +32,6 @@ func Getwd() (dir Path, err error) {
 }
 
 // TempDir returns the default directory to use for temporary files.
-//
-// On Unix systems, it returns $TMPDIR if non-empty, else /tmp.
-// On Windows, it uses GetTempPath, returning the first non-empty
-// value from %TMP%, %TEMP%, %USERPROFILE%, or the Windows directory.
-// On Plan 9, it returns /tmp.
-//
-// The directory is neither guaranteed to exist nor have accessible
-// permissions.
 func TempDir() Path {
 	return Path(os.TempDir())
 }
@@ -47,16 +39,6 @@ func TempDir() Path {
 // UserCacheDir returns the default root directory to use for user-specific
 // cached data. Users should create their own application-specific subdirectory
 // within this one and use that.
-//
-// On Unix systems, it returns $XDG_CACHE_HOME as specified by
-// https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html if
-// non-empty, else $HOME/.cache.
-// On Darwin, it returns $HOME/Library/Caches.
-// On Windows, it returns %LocalAppData%.
-// On Plan 9, it returns $home/lib/cache.
-//
-// If the location cannot be determined (for example, $HOME is not defined),
-// then it will return an error.
 func UserCacheDir() (Path, error) {
 	res, err := os.UserCacheDir()
 	return Path(res), err
@@ -65,82 +47,59 @@ func UserCacheDir() (Path, error) {
 // UserConfigDir returns the default root directory to use for user-specific
 // configuration data. Users should create their own application-specific
 // subdirectory within this one and use that.
-//
-// On Unix systems, it returns $XDG_CONFIG_HOME as specified by
-// https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html if
-// non-empty, else $HOME/.config.
-// On Darwin, it returns $HOME/Library/Application Support.
-// On Windows, it returns %AppData%.
-// On Plan 9, it returns $home/lib.
-//
-// If the location cannot be determined (for example, $HOME is not defined),
-// then it will return an error.
 func UserConfigDir() (Path, error) {
 	res, err := os.UserConfigDir()
 	return Path(res), err
 }
 
 // UserHomeDir returns the current user's home directory.
-//
-// On Unix, including macOS, it returns the $HOME environment variable.
-// On Windows, it returns %USERPROFILE%.
-// On Plan 9, it returns the $home environment variable.
 func UserHomeDir() (Path, error) {
 	res, err := os.UserHomeDir()
 	return Path(res), err
 }
 
 // Chdir changes the current working directory to the directory at path.
-// If there is an error, it will be of type *PathError.
+// If there is an error, it will be of type *os.PathError.
 func (path Path) Chdir() error { return os.Chdir(string(path)) }
 
 // Chmod changes the mode of the file at path to mode.
-// If the file is a symbolic link, it changes the mode of the link's target.
-// If there is an error, it will be of type *PathError.
-//
-// A different subset of the mode bits are used, depending on the
-// operating system.
-//
-// On Unix, the mode's permission bits, ModeSetuid, ModeSetgid, and
-// ModeSticky are used.
-//
-// On Windows, only the 0200 bit (owner writable) of mode is used; it
-// controls whether the file's read-only attribute is set or cleared.
-// The other bits are currently unused. For compatibility with Go 1.12
-// and earlier, use a non-zero mode. Use mode 0400 for a read-only
-// file and 0600 for a readable+writable file.
-//
-// On Plan 9, the mode's permission bits, ModeAppend, ModeExclusive,
-// and ModeTemporary are used.
+// If there is an error, it will be of type *os.PathError.
 func (path Path) Chmod(mode os.FileMode) error { return os.Chmod(string(path), mode) }
 
 // Chown changes the numeric uid and gid of the file at path.
-// If the file is a symbolic link, it changes the uid and gid of the link's target.
-// A uid or gid of -1 means to not change that value.
-// If there is an error, it will be of type *PathError.
-//
-// On Windows or Plan 9, Chown always returns the syscall.EWINDOWS or
-// EPLAN9 error, wrapped in *PathError.
+// If there is an error, it will be of type *os.PathError.
+// On Windows, it always returns the syscall.EWINDOWS error, wrapped
+// in *os.PathError.
 func (path Path) Chown(uid, gid int) error { return os.Chown(string(path), uid, gid) }
 
-// Chtimes changes the access and modification times of the file at path,
-// similar to the Unix utime() or utimes() functions.
-//
-// The underlying filesystem may truncate or round the values to a
-// less precise time unit.
-// If there is an error, it will be of type *PathError.
+// Chtimes changes the access and modification times of the file at path.
+// If there is an error, it will be of type *os.PathError.
 func (path Path) Chtimes(atime time.Time, mtime time.Time) error {
 	return os.Chtimes(string(path), atime, mtime)
 }
 
+// Create creates or truncates the file at path. If the file already exists,
+// it is truncated. If the file does not exist, it is created with mode 0666
+// (before umask). If successful, methods on the returned File can
+// be used for I/O; the associated file descriptor has mode os.O_RDWR.
+// If there is an error, it will be of type *os.PathError.
+func (path Path) Create() (*os.File, error) {
+	return os.Create(string(path))
+}
+
+// CreateTemp creates a new temporary file in the directory at path,
+// opens the file for reading and writing, and returns the resulting file.
+// The filename is generated by taking pattern and adding a random string to the end.
+// If pattern includes a "*", the random string replaces the last "*".
+// If the path is empty, CreateTemp uses the default directory for temporary files, as returned by TempDir.
+// Multiple programs or goroutines calling CreateTemp simultaneously will not choose the same file.
+// The caller can use the file's Name method to find the pathname of the file.
+// It is the caller's responsibility to remove the file when it is no longer needed.
+func (path Path) CreateTemp(pattern string) (*os.File, error) {
+	return os.CreateTemp(string(path), pattern)
+}
+
 // DirFS returns a file system (an fs.FS) for the tree of files rooted at the directory at path.
-//
-// Note that DirFS("/prefix") only guarantees that the Open calls it makes to the
-// operating system will begin with "/prefix": DirFS("/prefix").Open("file") is the
-// same as os.Open("/prefix/file"). So if /prefix/file is a symbolic link pointing outside
-// the /prefix tree, then using DirFS does not stop the access any more than using
-// os.Open does. DirFS is therefore not a general substitute for a chroot-style security
-// mechanism when the directory tree contains arbitrary content.
 func (path Path) DirFS() fs.FS {
 	return os.DirFS(string(path))
 }
@@ -150,15 +109,23 @@ func (path Path) DirFS() fs.FS {
 // If there is an error, it will be of type *PathError.
 //
 // On Windows, it always returns the syscall.EWINDOWS error, wrapped
-// in *PathError.
+// in *os.PathError.
 func (path Path) Lchown(uid, gid int) error {
 	return os.Lchown(string(path), uid, gid)
 }
 
 // Link creates newname as a hard link to path.
 // If there is an error, it will be of type *os.LinkError.
-func (path Path) Link(newname string) error {
-	return os.Link(string(path), newname)
+func (path Path) Link(newname Path) error {
+	return os.Link(string(path), string(newname))
+}
+
+// Lstat returns a FileInfo describing the file at path.
+// If the file is a symbolic link, the returned FileInfo
+// describes the symbolic link. Lstat makes no attempt to follow the link.
+// If there is an error, it will be of type *os.PathError.
+func (path Path) Lstat() (os.FileInfo, error) {
+	return os.Lstat(string(path))
 }
 
 // Mkdir creates a new directory at path with the specified permission
@@ -191,6 +158,24 @@ func (path Path) MkdirTemp(pattern string) (Path, error) {
 	return Path(res), err
 }
 
+// Open opens the file at path for reading. If successful, methods on
+// the returned file can be used for reading; the associated file
+// descriptor has mode os.O_RDONLY.
+// If there is an error, it will be of type *os.PathError.
+func (path Path) Open() (*os.File, error) {
+	return os.Open(string(path))
+}
+
+// OpenFile is the generalized open call; most users will use Open
+// or Create instead. It opens the file at path with specified flag
+// (O_RDONLY etc.). If the file does not exist, and the O_CREATE flag
+// is passed, it is created with mode perm (before umask). If successful,
+// methods on the returned File can be used for I/O.
+// If there is an error, it will be of type *os.PathError.
+func (path Path) OpenFile(flag int, perm os.FileMode) (*os.File, error) {
+	return os.OpenFile(string(path), flag, perm)
+}
+
 // Readlink returns the destination of the symbolic link at path.
 // If there is an error, it will be of type *os.PathError.
 func (path Path) Readlink() (Path, error) {
@@ -221,10 +206,16 @@ func (path Path) Rename(newpath Path) error {
 	return os.Rename(string(path), string(newpath))
 }
 
+// Stat returns a FileInfo describing the file at path.
+// If there is an error, it will be of type *os.PathError.
+func (path Path) Stat() (os.FileInfo, error) {
+	return os.Stat(string(path))
+}
+
 // Symlink creates newname as a symbolic link to the path.
 // If there is an error, it will be of type *os.LinkError..
-func (path Path) Symlink(newname string) error {
-	return os.Symlink(string(path), newname)
+func (path Path) Symlink(newname Path) error {
+	return os.Symlink(string(path), string(newname))
 }
 
 // Truncate changes the size of the path.

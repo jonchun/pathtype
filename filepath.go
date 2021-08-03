@@ -221,8 +221,11 @@ func (path Path) VolumeName() Path {
 //
 // Walk is less efficient than WalkDir, introduced in Go 1.16,
 // which avoids calling os.Lstat on every visited file or directory.
-func (path Path) Walk(fn filepath.WalkFunc) error {
-	return filepath.Walk(string(path), fn)
+func (path Path) Walk(fn WalkFunc) error {
+	fn1 := func(p string, info fs.FileInfo, err error) error {
+		return fn(Path(p), info, err)
+	}
+	return filepath.Walk(string(path), fn1)
 }
 
 // WalkDir walks the file tree rooted at path, calling fn for each file or
@@ -236,6 +239,12 @@ func (path Path) Walk(fn filepath.WalkFunc) error {
 // to walk that directory.
 //
 // WalkDir does not follow symbolic links.
-func (path Path) WalkDir(fn fs.WalkDirFunc) error {
-	return filepath.WalkDir(string(path), fn)
+func (path Path) WalkDir(fn WalkDirFunc) error {
+	fn1 := func(p string, d fs.DirEntry, err error) error {
+		return fn(Path(p), d, err)
+	}
+	return filepath.WalkDir(string(path), fn1)
 }
+
+// WalkFunc is the type of the function called by Walk to visit each each file or directory.
+type WalkFunc func(path Path, info fs.FileInfo, err error) error
