@@ -3,21 +3,20 @@ package pathtype_test
 import (
 	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
 
 	pt "github.com/jonchun/pathtype"
 )
 
-func prepareTestDirTree(tree string) (string, error) {
-	tmpDir, err := os.MkdirTemp("", "")
+func prepareTestDirTree(tree path) (path, error) {
+	tmpDir, err := path("").MkdirTemp("")
 	if err != nil {
 		return "", fmt.Errorf("error creating temp directory: %v\n", err)
 	}
 
-	err = os.MkdirAll(filepath.Join(tmpDir, tree), 0755)
+	err = tmpDir.Join(tree).MkdirAll(0755)
 	if err != nil {
-		os.RemoveAll(tmpDir)
+		tmpDir.RemoveAll()
 		return "", err
 	}
 
@@ -31,8 +30,8 @@ func ExampleWalk() {
 		fmt.Printf("unable to create test dir tree: %v\n", err)
 		return
 	}
-	defer os.RemoveAll(tmpDir)
-	os.Chdir(tmpDir)
+	defer tmpDir.RemoveAll()
+	tmpDir.Chdir()
 
 	subDirToSkip := "skip"
 

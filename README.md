@@ -79,14 +79,4 @@ See [GoDoc](https://godoc.org/github.com/jonchun/pathtype) for documentation, bu
 
 ## TODO
 
-- Add wrappers for other packages that take paths as strings. e.g: [os](https://pkg.go.dev/os)
-  Would be nice to have syntax similar to
-
-  ```
-  import pt "github.com/jonchun/pathtype"
-  type path = pt.Path
-
-  func example(p path) {
-      pt.Chmod(p, 0644)
-  }
-  ```
+- Update examples for all the methods and have 1-to-1 coverage of the official examples/docs.
