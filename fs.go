@@ -19,7 +19,7 @@ func (path Path) ValidPath() bool {
 	return fs.ValidPath(string(path))
 }
 
-// ReadDir reads the directory at path in FS fsys.
+// ReadDirFS reads the directory at path in FS fsys.
 // and returns a list of directory entries sorted by filename.
 func (path Path) ReadDirFS(fsys fs.FS) ([]fs.DirEntry, error) {
 	return fs.ReadDir(fsys, string(path))

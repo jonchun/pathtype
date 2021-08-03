@@ -1,4 +1,3 @@
-// This is a small wrapper around the filepath API that allows using file paths as their own type
 package pathtype
 
 import (
