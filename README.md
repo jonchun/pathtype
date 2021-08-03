@@ -1,6 +1,6 @@
 # pathtype
 
-Add a type for paths in Go. This small package basically just wraps "path/filepath" from the Standard library.
+Treat paths as their own type instead of using strings. This small package wraps functions from the standard library to create a new Path type.
 
 ## Example
 
