@@ -225,7 +225,7 @@ func (path Path) Truncate(size int64) error {
 	return os.Truncate(string(path), size)
 }
 
-// WriteFile writes data to the named file, creating it if necessary.
+// WriteFile writes data to the file at path, creating it if necessary.
 // If the file does not exist, WriteFile creates it with permissions perm (before umask);
 // otherwise WriteFile truncates it before writing, without changing permissions.
 func (path Path) WriteFile(data []byte, perm os.FileMode) error {
