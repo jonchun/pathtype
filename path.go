@@ -50,7 +50,7 @@ func (path Path) Base() Path {
 // Getting Dot-Dot Right,''
 // https://9p.io/sys/doc/lexnames.html
 func (path Path) Clean() Path {
-	return Path(filepath.Base(string(path)))
+	return Path(filepath.Clean(string(path)))
 }
 
 // Dir returns all but the last element of path, typically the path's directory.
@@ -97,12 +97,7 @@ func (path Path) FromSlash() Path {
 // The only possible returned error is ErrBadPattern, when pattern
 // is malformed.
 func (path Path) Glob(pattern string) (matches []Path, err error) {
-	p1 := ""
-	if filepath.IsAbs(pattern) {
-		p1 = pattern
-	} else {
-		p1 = filepath.Join(string(path), pattern)
-	}
+	p1 := filepath.Join(string(path), pattern)
 	m, err := filepath.Glob(p1)
 	if err != nil {
 		return
