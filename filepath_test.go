@@ -2,182 +2,136 @@ package pathtype_test
 
 import (
 	"path/filepath"
-	"sort"
 	"testing"
 )
 
 func TestAbs(t *testing.T) {
 	for _, p := range testPaths {
-		res1, err1 := p.Abs()
-		res2, err2 := filepath.Abs(string(p))
-		if !errorsEqual(err1, err2) {
-			t.Errorf("path(\"%v\").Abs() errors didn't match. Got: '%v' Expected: '%v'", p, err1, err2)
-		}
-		if string(res1) != res2 {
-			t.Errorf("path(\"%v\").Abs() didn't match. Got: '%v' Expected: '%v'", p, res1, res2)
-		}
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(filepath.Abs(string(p)))
+		t1.Result(p.Abs())
+		t1.AssertEquals()
 	}
 }
 
 func TestBase(t *testing.T) {
 	for _, p := range testPaths {
-		res1 := p.Base()
-		res2 := filepath.Base(string(p))
-		if string(res1) != res2 {
-			t.Errorf("path(\"%v\").Base() didn't match. Got: '%v' Expected: '%v'", p, res1, res2)
-		}
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(filepath.Base(string(p)))
+		t1.Result(p.Base())
+		t1.AssertEquals()
 	}
 }
 
 func TestClean(t *testing.T) {
 	for _, p := range testPaths {
-		res1 := p.Clean()
-		res2 := filepath.Clean(string(p))
-		if string(res1) != res2 {
-			t.Errorf("path(\"%v\").Clean() didn't match. Got: '%v' Expected: '%v'", p, res1, res2)
-		}
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(filepath.Clean(string(p)))
+		t1.Result(p.Clean())
+		t1.AssertEquals()
 	}
 }
 
 func TestDir(t *testing.T) {
 	for _, p := range testPaths {
-		res1 := p.Dir()
-		res2 := filepath.Dir(string(p))
-		if string(res1) != res2 {
-			t.Errorf("path(\"%v\").Dir() didn't match. Got: '%v' Expected: '%v'", p, res1, res2)
-		}
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(filepath.Dir(string(p)))
+		t1.Result(p.Dir())
+		t1.AssertEquals()
 	}
 }
 
 func TestEvalSymlinks(t *testing.T) {
 	for _, p := range testPaths {
-		res1, err1 := p.EvalSymlinks()
-		res2, err2 := filepath.EvalSymlinks(string(p))
-		if !errorsEqual(err1, err2) {
-			t.Errorf("path(\"%v\").EvalSymlinks() errors didn't match. Got: '%v' Expected: '%v'", p, err1, err2)
-		}
-		if string(res1) != res2 {
-			t.Errorf("path(\"%v\").EvalSymlinks() didn't match. Got: '%v' Expected: '%v'", p, res1, res2)
-		}
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(filepath.EvalSymlinks(string(p)))
+		t1.Result(p.EvalSymlinks())
+		t1.AssertEquals()
 	}
 }
 
 func TestExt(t *testing.T) {
 	for _, p := range testPaths {
-		res1 := p.Ext()
-		res2 := filepath.Ext(string(p))
-		if res1 != res2 {
-			t.Errorf("path(\"%v\").Ext() didn't match. Got: '%v' Expected: '%v'", p, res1, res2)
-		}
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(filepath.Ext(string(p)))
+		t1.Result(p.Ext())
+		t1.AssertEquals()
 	}
 }
 
 func TestFromSlash(t *testing.T) {
 	for _, p := range testPaths {
-		res1 := p.FromSlash()
-		res2 := filepath.FromSlash(string(p))
-		if string(res1) != res2 {
-			t.Errorf("path(\"%v\").FromSlash() didn't match. Got: '%v' Expected: '%v'", p, res1, res2)
-		}
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(filepath.FromSlash(string(p)))
+		t1.Result(p.FromSlash())
+		t1.AssertEquals()
 	}
 }
 
 func TestGlob(t *testing.T) {
 	for _, p := range testPaths {
 		for _, p1 := range testPatterns {
-			res1, err1 := p.Glob(p1)
-			res2, err2 := filepath.Glob(filepath.Join(string(p), p1))
-			if !errorsEqual(err1, err2) {
-				t.Errorf("path(\"%v\").Glob(\"%s\") errors didn't match. Got: '%v' Expected: '%v'", p, p1, err1, err2)
-			}
-
-			// convert res1 to a slice of strings
-			var res3 []string
-			for _, m := range res1 {
-				res3 = append(res3, string(m))
-			}
-
-			// sort both (unnecessary?)
-			sort.Strings(res2)
-			sort.Strings(res3)
-
-			for i, m := range res3 {
-				if m != res2[i] {
-					t.Errorf("path(\"%v\").Glob(\"%s\") didn't match. Got: '%v' Expected: '%v'", p, p1, m, res2[i])
-				}
-			}
+			t1 := tester{TB: t, Transform: pathToString}
+			t1.Expect(filepath.Glob(filepath.Join(string(p), p1)))
+			t1.Result(p.Glob(p1))
+			t1.AssertEquals()
 		}
 	}
 }
 
 func TestIsAbs(t *testing.T) {
 	for _, p := range testPaths {
-		res1 := p.IsAbs()
-		res2 := filepath.IsAbs(string(p))
-		if res1 != res2 {
-			t.Errorf("path(\"%v\").IsAbs() didn't match. Got: '%v' Expected: '%v'", p, res1, res2)
-		}
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(filepath.IsAbs(string(p)))
+		t1.Result(p.IsAbs())
+		t1.AssertEquals()
 	}
 }
 
 func TestMatch(t *testing.T) {
 	for _, p := range testPaths {
 		for _, p1 := range testPatterns {
-			res1, err1 := p.Match(p1)
-			res2, err2 := filepath.Match(p1, string(p))
-			if !errorsEqual(err1, err2) {
-				t.Errorf("path(\"%v\").Match(\"%s\") errors didn't match. Got: '%v' Expected: '%v'", p, p1, err1, err2)
-			}
-			if res1 != res2 {
-				t.Errorf("path(\"%v\").Match() didn't match. Got: '%v' Expected: '%v'", p, res1, res2)
-			}
+			t1 := tester{TB: t, Transform: pathToString}
+			t1.Expect(filepath.Match(p1, string(p)))
+			t1.Result(p.Match(p1))
+			t1.AssertEquals()
 		}
 	}
 }
 
 func TestRel(t *testing.T) {
 	for _, p := range testPaths {
-		for _, targpath := range testPaths {
-			res1, err1 := p.Rel(targpath)
-			res2, err2 := filepath.Rel(string(p), string(targpath))
-			if !errorsEqual(err1, err2) {
-				t.Errorf("path(\"%v\").Rel(\"%v\") errors didn't match. Got: '%v' Expected: '%v'", p, targpath, err1, err2)
-			}
-			if string(res1) != res2 {
-				t.Errorf("path(\"%v\").Rel(\"%v\") didn't match. Got: '%v' Expected: '%v'", p, targpath, res1, res2)
-			}
+		for _, p1 := range testPaths {
+			t1 := tester{TB: t, Transform: pathToString}
+			t1.Expect(filepath.Rel(string(p), string(p1)))
+			t1.Result(p.Rel(p1))
+			t1.AssertEquals()
 		}
 	}
 }
 
 func TestSplit(t *testing.T) {
 	for _, p := range testPaths {
-		dir1, file1 := p.Split()
-		dir2, file2 := filepath.Split(string(p))
-		if string(dir1) != dir2 {
-			t.Errorf("path(\"%v\").Split() dir didn't match. Got: '%v' Expected: '%v'", p, dir1, dir2)
-		}
-		if string(file1) != file2 {
-			t.Errorf("path(\"%v\").Split() file didn't match. Got: '%v' Expected: '%v'", p, file1, file2)
-		}
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(filepath.Split(string(p)))
+		t1.Result(p.Split())
+		t1.AssertEquals()
 	}
 }
 
 func TestToSlash(t *testing.T) {
 	for _, p := range testPaths {
-		res1 := p.ToSlash()
-		res2 := filepath.ToSlash(string(p))
-		if string(res1) != res2 {
-			t.Errorf("path(\"%v\").ToSlash() didn't match. Got: '%v' Expected: '%v'", p, res1, res2)
-		}
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(filepath.ToSlash(string(p)))
+		t1.Result(p.ToSlash())
+		t1.AssertEquals()
 	}
 }
 func TestVolumeName(t *testing.T) {
 	for _, p := range testPaths {
-		res1 := p.VolumeName()
-		res2 := filepath.VolumeName(string(p))
-		if string(res1) != res2 {
-			t.Errorf("path(\"%v\").VolumeName() didn't match. Got: '%v' Expected: '%v'", p, res1, res2)
-		}
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(filepath.VolumeName(string(p)))
+		t1.Result(p.VolumeName())
+		t1.AssertEquals()
 	}
 }

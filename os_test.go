@@ -12,123 +12,109 @@ import (
 )
 
 func TestExecutable(t *testing.T) {
-	res1, err1 := pt.Executable()
-	res2, err2 := os.Executable()
-	if !errorsEqual(err1, err2) {
-		t.Errorf("pt.Executable() errors didn't match. Got: '%v' Expected: '%v'", err1, err2)
-	}
-	if string(res1) != res2 {
-		t.Errorf("pt.Executable() didn't match. Got: '%v' Expected: '%v'", res1, res2)
-	}
+	t1 := tester{TB: t, Transform: pathToString}
+	t1.Expect(os.Executable())
+	t1.Result(pt.Executable())
+	t1.AssertEquals()
 }
 
 func TestGetwd(t *testing.T) {
-	res1, err1 := pt.Getwd()
-	res2, err2 := os.Getwd()
-	if !errorsEqual(err1, err2) {
-		t.Errorf("pt.Getwd() errors didn't match. Got: '%v' Expected: '%v'", err1, err2)
-	}
-	if string(res1) != res2 {
-		t.Errorf("pt.Getwd() didn't match. Got: '%v' Expected: '%v'", res1, res2)
-	}
+	t1 := tester{TB: t, Transform: pathToString}
+	t1.Expect(os.Getwd())
+	t1.Result(pt.Getwd())
+	t1.AssertEquals()
 }
 
 func TestTempDir(t *testing.T) {
-	res1 := pt.TempDir()
-	res2 := os.TempDir()
-	if string(res1) != res2 {
-		t.Errorf("pt.TempDir() didn't match. Got: '%v' Expected: '%v'", res1, res2)
-	}
+	t1 := tester{TB: t, Transform: pathToString}
+	t1.Expect(os.TempDir())
+	t1.Result(pt.TempDir())
+	t1.AssertEquals()
 }
 
 func TestUserCacheDir(t *testing.T) {
-	res1, err1 := pt.UserCacheDir()
-	res2, err2 := os.UserCacheDir()
-	if !errorsEqual(err1, err2) {
-		t.Errorf("pt.UserCacheDir() errors didn't match. Got: '%v' Expected: '%v'", err1, err2)
-	}
-	if string(res1) != res2 {
-		t.Errorf("pt.UserCacheDir() didn't match. Got: '%v' Expected: '%v'", res1, res2)
-	}
+	t1 := tester{TB: t, Transform: pathToString}
+	t1.Expect(os.UserCacheDir())
+	t1.Result(pt.UserCacheDir())
+	t1.AssertEquals()
 }
 
 func TestUserConfigDir(t *testing.T) {
-	res1, err1 := pt.UserConfigDir()
-	res2, err2 := os.UserConfigDir()
-	if !errorsEqual(err1, err2) {
-		t.Errorf("pt.UserConfigDir() errors didn't match. Got: '%v' Expected: '%v'", err1, err2)
-	}
-	if string(res1) != res2 {
-		t.Errorf("pt.UserConfigDir() didn't match. Got: '%v' Expected: '%v'", res1, res2)
-	}
+	t1 := tester{TB: t, Transform: pathToString}
+	t1.Expect(os.UserConfigDir())
+	t1.Result(pt.UserConfigDir())
+	t1.AssertEquals()
 }
 
 func TestUserHomeDir(t *testing.T) {
-	res1, err1 := pt.UserHomeDir()
-	res2, err2 := os.UserHomeDir()
-	if !errorsEqual(err1, err2) {
-		t.Errorf("pt.UserHomeDir() errors didn't match. Got: '%v' Expected: '%v'", err1, err2)
-	}
-	if string(res1) != res2 {
-		t.Errorf("pt.UserHomeDir() didn't match. Got: '%v' Expected: '%v'", res1, res2)
-	}
+	t1 := tester{TB: t, Transform: pathToString}
+	t1.Expect(os.UserHomeDir())
+	t1.Result(pt.UserHomeDir())
+	t1.AssertEquals()
 }
 
 func TestChdir(t *testing.T) {
 	oldD, _ := pt.Getwd()
 	defer oldD.Chdir()
+
 	for _, p := range testPaths {
-		err1 := p.Chdir()
-		err2 := os.Chdir(string(p))
-		if !errorsEqual(err1, err2) {
-			t.Errorf("path(\"%v\").Chdir() errors didn't match. Got: '%v' Expected: '%v'", p, err1, err2)
-		}
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(os.Chdir(string(p)))
+		t1.Result(p.Chdir())
+		t1.AssertEquals()
 	}
 }
 
 func TestChmod(t *testing.T) {
-	d := createFilesInTmp(testPaths2)
+	modes := []fs.FileMode{0644, 0755, 0777}
+	d := createFilesInTmp(testFiles)
 	defer d.RemoveAll()
-	for _, p := range testPaths2 {
-		mode := fs.FileMode(0644)
-		err1 := p.Chmod(mode)
-		err2 := os.Chmod(string(p), mode)
-		if !errorsEqual(err1, err2) {
-			t.Errorf("path(\"%v\").Chmod(%v) errors didn't match. Got: '%v' Expected: '%v'", p, mode, err1, err2)
+	for _, p := range testFiles {
+		for _, mode := range modes {
+			t1 := tester{TB: t, Transform: pathToString}
+			t1.Expect(os.Chmod(string(p), mode))
+			t1.Result(p.Chmod(mode))
+			t1.AssertEquals()
 		}
 	}
 }
 
 func TestChown(t *testing.T) {
-	d := createFilesInTmp(testPaths2)
+	d := createFilesInTmp(testFiles)
 	defer d.RemoveAll()
-	globs, _ := d.Glob("*")
-	for _, p := range globs {
-		err := p.Chown(os.Geteuid(), os.Getegid())
-		if err != nil {
-			t.Errorf("path(\"%v\").Chown(%v, %v) failed", p, os.Geteuid(), os.Getegid())
-		}
-		err = p.Chown(0, 0)
-		if err != nil && !strings.Contains(err.Error(), "operation not permitted") {
-			t.Errorf("path(\"%v\").Chown(%v, %v) failed", p, 0, 0)
+
+	for _, paths := range [][]path{testPaths, testFiles} {
+		for _, p := range paths {
+			t1 := tester{TB: t, Transform: pathToString}
+			t1.Expect(os.Chown(string(p), os.Geteuid(), os.Getegid()))
+			t1.Result(p.Chown(os.Geteuid(), os.Getegid()))
+			t1.AssertEquals()
+
+			t2 := tester{TB: t, Transform: pathToString}
+			t2.Expect(os.Chown(string(p), 0, 0))
+			t2.Result(p.Chown(0, 0))
+			t2.AssertEquals()
 		}
 	}
 }
 
 func TestChtimes(t *testing.T) {
-	d := createFilesInTmp(testPaths2)
+	d := createFilesInTmp(testFiles)
 	defer d.RemoveAll()
-	for _, p := range testPaths2 {
-		now := time.Now()
-		err1 := p.Chtimes(now, now)
-		err2 := os.Chtimes(string(p), now, now)
-		if !errorsEqual(err1, err2) {
-			t.Errorf("path(\"%v\").Chtimes(%v, %v) errors didn't match. Got: '%v' Expected: '%v'", p, now, now, err1, err2)
+
+	for _, paths := range [][]path{testPaths, testFiles} {
+		for _, p := range paths {
+			now := time.Now()
+			t1 := tester{TB: t, Transform: pathToString}
+			t1.Expect(os.Chtimes(string(p), now, now))
+			t1.Result(p.Chtimes(now, now))
+			t1.AssertEquals()
 		}
 	}
 }
+
 func TestCreate(t *testing.T) {
-	d, err := path(".").MkdirTemp("")
+	d, err := path("").MkdirTemp("")
 	if err != nil {
 		panic(err)
 	}
@@ -136,87 +122,77 @@ func TestCreate(t *testing.T) {
 
 	oldD, _ := pt.Getwd()
 	defer oldD.Chdir()
+
 	d.Chdir()
-	for _, p := range testPaths2 {
-		var name1, name2 string
-		file1, err1 := p.Create()
-		if file1 != nil {
-			name1 = file1.Name()
-		}
-		path(name1).Remove()
-		file2, err2 := os.Create(string(p))
-		if file2 != nil {
-			name2 = file2.Name()
-		}
-		if !errorsEqual(err1, err2) {
-			t.Errorf("path(\"%v\").Create() errors didn't match. Got: '%v' Expected: '%v'", p, err1, err2)
-		}
-		if name1 != name2 {
-			t.Errorf("path(\"%v\").Create() didn't match. Got: '%v' Expected: '%v'", p, name1, name2)
+
+	for _, paths := range [][]path{testPaths, testFiles} {
+		for _, p := range paths {
+			t1 := tester{TB: t, Transform: pathToString}
+			t1.Expect(os.Create(string(p)))
+			t1.Result(p.Create())
+			t1.AssertEquals()
 		}
 	}
 }
 
 func TestCreateTemp(t *testing.T) {
-	d, err := path(".").MkdirTemp("temp*")
+	d, err := path("").MkdirTemp("temp*")
 	if err != nil {
 		panic(err)
 	}
 	defer d.RemoveAll()
 
-	_, err = d.CreateTemp("hello*")
-	if err != nil {
-		t.Errorf("path(\"%v\").CreateTemp() failed. error: `%v`", d, err)
+	for _, p := range testFiles {
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(os.CreateTemp(string(d), string(p)))
+		t1.Result(d.CreateTemp(string(p)))
+		t1.AssertSimilar()
 	}
 }
 
 func TestLchown(t *testing.T) {
-	d := createFilesInTmp(testPaths2)
+	d := createFilesInTmp(testFiles)
 	defer d.RemoveAll()
-	globs, _ := d.Glob("*")
-	for _, p := range globs {
-		err := p.Lchown(os.Geteuid(), os.Getegid())
-		if err != nil {
-			t.Errorf("path(\"%v\").Lchown(%v, %v) failed", p, os.Geteuid(), os.Getegid())
-		}
-		err = p.Lchown(0, 0)
-		if err != nil && !strings.Contains(err.Error(), "operation not permitted") {
-			t.Errorf("path(\"%v\").Lchown(%v, %v) failed", p, 0, 0)
+
+	for _, paths := range [][]path{testPaths, testFiles} {
+		for _, p := range paths {
+			t1 := tester{TB: t, Transform: pathToString}
+			t1.Expect(os.Lchown(string(p), os.Geteuid(), os.Getegid()))
+			t1.Result(p.Lchown(os.Geteuid(), os.Getegid()))
+			t1.AssertEquals()
+
+			t2 := tester{TB: t, Transform: pathToString}
+			t2.Expect(os.Lchown(string(p), 0, 0))
+			t2.Result(p.Lchown(0, 0))
+			t2.AssertEquals()
 		}
 	}
 }
 
 func TestLink(t *testing.T) {
-	d := createFilesInTmp(testPaths2)
+	d := createFilesInTmp(testFiles)
 	defer d.RemoveAll()
 	globs, _ := d.Glob("*")
 	for _, p := range globs {
-		for _, p1 := range testPaths2 {
-			err1 := p.Link(p1)
+		for _, p1 := range testPaths {
+			t1 := tester{TB: t, Transform: pathToString}
+			t1.Expect(os.Link(string(p), string(p1)))
 			p1.Remove()
-			err2 := os.Link(string(p), string(p1))
+			t1.Result(p.Link(p1))
 			p1.Remove()
-			if !errorsEqual(err1, err2) {
-				t.Errorf("path(\"%v\").Link(\"%v\") errors didn't match. Got: '%v' Expected: '%v'", p, p1, err1, err2)
-			}
+			t1.AssertEquals()
 		}
 	}
 }
 
 func TestLstat(t *testing.T) {
-	d := createFilesInTmp(testPaths2)
+	d := createFilesInTmp(testFiles)
 	defer d.RemoveAll()
-	for _, p := range testPaths2 {
-		file1, err1 := p.Lstat()
-		file2, err2 := os.Lstat(string(p))
-		if !errorsEqual(err1, err2) {
-			t.Errorf("path(\"%v\").Lstat() errors didn't match. Got: '%v' Expected: '%v'", p, err1, err2)
-		}
-		if file1 != nil && file2 != nil {
-			if !(file1.Name() == file2.Name() && file1.Size() == file2.Size()) {
-				t.Errorf("path(\"%v\").Lstat() didn't match. Got: '%v' Expected: '%v'", p, file1, file2)
-			}
-		}
+	for _, p := range testPaths {
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(os.Lstat(string(p)))
+		t1.Result(p.Lstat())
+		t1.AssertEquals()
 	}
 }
 
@@ -240,6 +216,7 @@ func TestMkdir(t *testing.T) {
 		t.Errorf("path(\"%v\").Mkdir() failed. error: `%v`", d, err)
 	}
 }
+
 func TestMkdirAll(t *testing.T) {
 	d, err := path(".").MkdirTemp("")
 	if err != nil {
@@ -271,70 +248,63 @@ func TestMkdirTemp(t *testing.T) {
 }
 
 func TestOpen(t *testing.T) {
-	d := createFilesInTmp(testPaths2)
+	d := createFilesInTmp(testFiles)
 	defer d.RemoveAll()
-	globs, _ := d.Glob("*")
-	for _, p := range globs {
-		_, err := p.Open()
-		if err != nil {
-			t.Errorf("path(\"%v\").Open() failed. error: `%v`", p, err)
-		}
+	for _, p := range testPaths {
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(os.Open(string(p)))
+		t1.Result(p.Open())
+		t1.AssertEquals()
 	}
-	for _, p := range testPaths2 {
-		_, err := p.Open()
-		if err != nil && !strings.Contains(err.Error(), "no such file or directory") {
-			t.Errorf("path(\"%v\").Open() failed. error: `%v`", p, err)
-		}
+	for _, p := range testFiles {
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(os.Open(string(p)))
+		t1.Result(p.Open())
+		t1.AssertEquals()
 	}
 }
 
 func TestOpenFile(t *testing.T) {
-	d := createFilesInTmp(testPaths2)
+	d := createFilesInTmp(testFiles)
 	defer d.RemoveAll()
-	globs, _ := d.Glob("*")
-	for _, p := range globs {
-		_, err := p.OpenFile(os.O_RDONLY, 0)
-		if err != nil {
-			t.Errorf("path(\"%v\").OpenFile() failed. error: `%v`", p, err)
-		}
+	for _, p := range testPaths {
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(os.OpenFile(string(p), os.O_RDWR, 0))
+		t1.Result(p.OpenFile(os.O_RDWR, 0))
+		t1.AssertEquals()
 	}
-	for _, p := range testPaths2 {
-		_, err := p.Open()
-		if err != nil && !strings.Contains(err.Error(), "no such file or directory") {
-			t.Errorf("path(\"%v\").OpenFile() failed. error: `%v`", p, err)
-		}
+	for _, p := range testFiles {
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(os.OpenFile(string(p), os.O_RDWR, 0))
+		t1.Result(p.OpenFile(os.O_RDWR, 0))
+		t1.AssertEquals()
 	}
 }
 
 func TestReadlink(t *testing.T) {
-	d := createFilesInTmp(testPaths2)
+	d := createFilesInTmp(testFiles)
 	defer d.RemoveAll()
-	for _, p := range testPaths2 {
-		res1, err1 := p.Readlink()
-		res2, err2 := os.Readlink(string(p))
-		if !errorsEqual(err1, err2) {
-			t.Errorf("path(\"%v\").Readlink() errors didn't match. Got: '%v' Expected: '%v'", p, err1, err2)
-		}
-		if string(res1) != res2 {
-			t.Errorf("path(\"%v\").Readlink() didn't match. Got: '%v' Expected: '%v'", p, res1, res2)
-
-		}
+	for _, p := range testPaths {
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(os.Readlink(string(p)))
+		t1.Result(p.Readlink())
+		t1.AssertEquals()
 	}
 }
 
 func TestRemove(t *testing.T) {
-	d := createFilesInTmp(testPaths2)
+	d := createFilesInTmp(testFiles)
 	defer d.RemoveAll()
-	for _, p := range testPaths2 {
-		err := p.Remove()
-		if err != nil && !strings.Contains(err.Error(), "no such file or directory") {
-			t.Errorf("path(\"%v\").Remove() failed. error: `%v`", p, err)
-		}
+	for _, p := range testFiles {
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(os.Remove(string(p)))
+		t1.Result(p.Remove())
+		t1.AssertEquals()
 	}
 }
 
 func TestRemoveAll(t *testing.T) {
-	d := createFilesInTmp(testPaths2)
+	d := createFilesInTmp(testFiles)
 	err := d.RemoveAll()
 	if err != nil {
 		t.Errorf("path(\"%v\").RemoveAll() failed. error: `%v`", d, err)
@@ -342,54 +312,48 @@ func TestRemoveAll(t *testing.T) {
 }
 
 func TestRename(t *testing.T) {
-	d := createFilesInTmp(testPaths2)
+	d := createFilesInTmp(testFiles)
 	defer d.RemoveAll()
-	for _, p := range testPaths2 {
-		err := p.Rename(p.Join(path("test")))
-		if err != nil && !strings.Contains(err.Error(), "no such file or directory") {
-			t.Errorf("path(\"%v\").Rename(\"%v\") failed. error: `%v`", p, p.Join(path("test")), err)
-		}
+	for _, p := range testFiles {
+		renameTo := p.Join(path("test"))
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(os.Rename(string(p), string(renameTo)))
+		t1.Result(p.Rename(renameTo))
+		t1.AssertEquals()
 	}
 }
 
 func TestStat(t *testing.T) {
-	d := createFilesInTmp(testPaths2)
+	d := createFilesInTmp(testFiles)
 	defer d.RemoveAll()
-	for _, p := range testPaths2 {
-		file1, err1 := p.Stat()
-		file2, err2 := os.Stat(string(p))
-		if !errorsEqual(err1, err2) {
-			t.Errorf("path(\"%v\").Stat() errors didn't match. Got: '%v' Expected: '%v'", p, err1, err2)
-		}
-		if file1 != nil && file2 != nil {
-			if !(file1.Name() == file2.Name() && file1.Size() == file2.Size()) {
-				t.Errorf("path(\"%v\").Stat() didn't match. Got: '%v' Expected: '%v'", p, file1, file2)
-			}
-		}
+	for _, p := range testFiles {
+		t1 := tester{TB: t, Transform: pathToString}
+		t1.Expect(os.Stat(string(p)))
+		t1.Result(p.Stat())
+		t1.AssertEquals()
 	}
 }
 
 func TestSymlink(t *testing.T) {
-	d := createFilesInTmp(testPaths2)
+	d := createFilesInTmp(testFiles)
 	defer d.RemoveAll()
 	globs, _ := d.Glob("*")
 	for _, p := range globs {
-		for _, p1 := range testPaths2 {
-			err1 := p.Symlink(p1)
+		for _, p1 := range testFiles {
+			t1 := tester{TB: t, Transform: pathToString}
+			t1.Expect(os.Symlink(string(p), string(p1)))
 			p1.Remove()
-			err2 := os.Symlink(string(p), string(p1))
+			t1.Result(p.Symlink(p1))
 			p1.Remove()
-			if !errorsEqual(err1, err2) {
-				t.Errorf("path(\"%v\").Symlink(\"%v\") errors didn't match. Got: '%v' Expected: '%v'", p, p1, err1, err2)
-			}
+			t1.AssertEquals()
 		}
 	}
 }
 
 func TestTruncate(t *testing.T) {
-	d := createFilesInTmp(testPaths2)
+	d := createFilesInTmp(testFiles)
 	defer d.RemoveAll()
-	for _, p := range testPaths2 {
+	for _, p := range testFiles {
 		s, err := p.Stat()
 		if err != nil {
 			if !strings.Contains(err.Error(), "no such file or directory") {
