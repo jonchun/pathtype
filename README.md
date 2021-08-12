@@ -6,7 +6,7 @@ Treat paths as their own type instead of using strings. This small package wraps
 
 ### Code
 
-```
+```go
 package main
 
 import (
